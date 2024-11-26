@@ -107,7 +107,7 @@ static void gpio_setup(void)
 		GPIO8 | GPIO9 | GPIO10 | GPIO11 | GPIO12 | GPIO13 |
 		GPIO14 | GPIO15);
 }
-
+// Печать целых чисел через USATR
 static void my_usart_print_int(uint32_t usart, int32_t value)
 {
 	int8_t i;
@@ -161,67 +161,20 @@ static void clock_setup(void)
 int main(void)
 {
 	uint8_t temp;
-	int16_t gyr_x;
 	clock_setup();
 	gpio_setup();
 	usart_setup();
 	spi_setup();
 
-	gpio_clear(GPIOE, GPIO3);
-	spi_send8(SPI1, GYR_CTRL_REG1);
-	spi_read8(SPI1);
-	spi_send8(SPI1, GYR_CTRL_REG1_PD | GYR_CTRL_REG1_XEN |
-			GYR_CTRL_REG1_YEN | GYR_CTRL_REG1_ZEN |
-			(3 << GYR_CTRL_REG1_BW_SHIFT));
-	spi_read8(SPI1);
-	gpio_set(GPIOE, GPIO3);
-
-	gpio_clear(GPIOE, GPIO3);
-	spi_send8(SPI1, GYR_CTRL_REG4);
-	spi_read8(SPI1);
-	spi_send8(SPI1, (1 << GYR_CTRL_REG4_FS_SHIFT));
-	spi_read8(SPI1);
-	gpio_set(GPIOE, GPIO3);
-
 	while (1) {
 
-		gpio_clear(GPIOE, GPIO3);
-		spi_send8(SPI1, GYR_WHO_AM_I | GYR_RNW);
-		spi_read8(SPI1);
-		spi_send8(SPI1, 0);
-		temp=spi_read8(SPI1);
-		my_usart_print_int(USART2, (temp));
-		gpio_set(GPIOE, GPIO3);
-
-		gpio_clear(GPIOE, GPIO3);
-		spi_send8(SPI1, GYR_STATUS_REG | GYR_RNW);
-		spi_read8(SPI1);
-		spi_send8(SPI1, 0);
-		temp=spi_read8(SPI1);
-		my_usart_print_int(USART2, (temp));
-		gpio_set(GPIOE, GPIO3);
-
+		// Чтение температуры
 		gpio_clear(GPIOE, GPIO3);
 		spi_send8(SPI1, GYR_OUT_TEMP | GYR_RNW);
 		spi_read8(SPI1);
 		spi_send8(SPI1, 0);
 		temp=spi_read8(SPI1);
 		my_usart_print_int(USART2, (temp));
-		gpio_set(GPIOE, GPIO3);
-
-		gpio_clear(GPIOE, GPIO3);
-		spi_send8(SPI1, GYR_OUT_X_L | GYR_RNW);
-		spi_read8(SPI1);
-		spi_send8(SPI1, 0);
-		gyr_x=spi_read8(SPI1);
-		gpio_set(GPIOE, GPIO3);
-
-		gpio_clear(GPIOE, GPIO3);
-		spi_send8(SPI1, GYR_OUT_X_H | GYR_RNW);
-		spi_read8(SPI1);
-		spi_send8(SPI1, 0);
-		gyr_x|=spi_read8(SPI1) << 8;
-		my_usart_print_int(USART2, (gyr_x));
 		gpio_set(GPIOE, GPIO3);
 
 		int i;
