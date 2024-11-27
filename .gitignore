@@ -1,5 +1,5 @@
 build/
-.vscode/
+.vscode/browse.vc.db
 
 # исключение из правил игнорирования
-!.vscode/*.json
+#!/.vscode/*.json
