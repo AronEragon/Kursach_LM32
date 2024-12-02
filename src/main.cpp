@@ -27,36 +27,24 @@
 static void spi_setup(void)
 {
 	rcc_periph_clock_enable(RCC_SPI1);
-	/* For spi signal pins */
-	rcc_periph_clock_enable(RCC_GPIOA);
-	/* For spi mode select on the l3gd20 */
-	rcc_periph_clock_enable(RCC_GPIOE);
 
-	/* Setup GPIOE3 pin for spi mode l3gd20 select. */
-	gpio_mode_setup(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO3);
-	/* Start with spi communication disabled */
-	gpio_set(GPIOE, GPIO3);
+    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO5 | GPIO6 | GPIO7);
+    gpio_set_af(GPIOA, GPIO_AF5, GPIO5 | GPIO6 | GPIO7);
+    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, GPIO5 | GPIO6 | GPIO7);
 
-	/* Setup GPIO pins for AF5 for SPI1 signals. */
-	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
-			GPIO5 | GPIO6 | GPIO7);
-	gpio_set_af(GPIOA, GPIO_AF5, GPIO5 | GPIO6 | GPIO7);
+    spi_disable(SPI1);
+    spi_set_master_mode(SPI1);
+    spi_set_baudrate_prescaler(SPI1, SPI_CR1_BR_FPCLK_DIV_64);
+    spi_set_clock_polarity_0(SPI1);
+    spi_set_clock_phase_0(SPI1);
+    spi_set_data_size(SPI1, SPI_CR2_DS_8BIT);
+    spi_send_msb_first(SPI1);
+    spi_enable_software_slave_management(SPI1);
+    spi_set_nss_high(SPI1);
+    spi_fifo_reception_threshold_8bit(SPI1);
 
-	//spi initialization;
-	spi_set_master_mode(SPI1);
-	spi_set_baudrate_prescaler(SPI1, SPI_CR1_BR_FPCLK_DIV_64);
-	spi_set_clock_polarity_0(SPI1);
-	spi_set_clock_phase_0(SPI1);
-	spi_set_full_duplex_mode(SPI1);
-	spi_set_unidirectional_mode(SPI1); /* bidirectional but in 3-wire */
-	spi_set_data_size(SPI1, SPI_CR2_DS_8BIT);
-	spi_enable_software_slave_management(SPI1);
-	spi_send_msb_first(SPI1);
-	spi_set_nss_high(SPI1);
-	//spi_enable_ss_output(SPI1);
-	spi_fifo_reception_threshold_8bit(SPI1);
-	SPI_I2SCFGR(SPI1) &= ~SPI_I2SCFGR_I2SMOD;
-	spi_enable(SPI1);
+    spi_enable(SPI1);
+
 }
 
 static void clock_setup(void)
@@ -64,28 +52,16 @@ static void clock_setup(void)
 	rcc_clock_setup_hsi(&rcc_hsi_configs[RCC_CLOCK_HSI_64MHZ]);
 }
 
-#define GYR_RNW			(1 << 7) /* Write when zero */
-#define GYR_MNS			(1 << 6) /* Multiple reads when 1 */
-#define GYR_WHO_AM_I		0x0F
-#define GYR_OUT_TEMP		0x26
-#define GYR_STATUS_REG		0x27
-#define GYR_CTRL_REG1		0x20
-#define GYR_CTRL_REG1_PD	(1 << 3)
-#define GYR_CTRL_REG1_XEN	(1 << 1)
-#define GYR_CTRL_REG1_YEN	(1 << 0)
-#define GYR_CTRL_REG1_ZEN	(1 << 2)
-#define GYR_CTRL_REG1_BW_SHIFT	4
-#define GYR_CTRL_REG4		0x23
-#define GYR_CTRL_REG4_FS_SHIFT	4
-
-#define GYR_OUT_X_L		0x28
-#define GYR_OUT_X_H		0x29
-
-
 /*
 lm35
 VCC --- +5V/+3V
 DAT --- PA0
+
+
+usart2
+rx зеленый --- PA3
+tx белый --- PA2
+черный --- GND
 */
 
 static void adc_setup(void)
@@ -120,7 +96,7 @@ static void adc_setup(void)
 	/* Wait for ADC starting up. 
 	Подождите, пока запустится АЦП.*/
 	int i;
-	for (i = 0; i < 800000; i++)
+	for (i = 0; i < 8000; i++)
 		__asm__("nop");
 
 }
@@ -150,6 +126,9 @@ static void usart_setup(void)
 	Наконец включите USART.*/
 	usart_enable(USART2);
 }
+
+
+
 //Работа светодиодов
 static void gpio_setup(void)
 {
@@ -159,33 +138,33 @@ static void gpio_setup(void)
 		GPIO14 | GPIO15);
 }
 //Печать целых чисел через USATR
-// static void my_usart_print_int(uint32_t usart, int16_t value)
-// {
-// 	int8_t i;
-// 	int8_t nr_digits = 0;
-// 	char buffer[25];
+static void my_usart_print_int(uint32_t usart, int16_t value)
+{
+	int8_t i;
+	int8_t nr_digits = 0;
+	char buffer[25];
 
-// 	if (value < 0) {
-// 		usart_send_blocking(usart, '-');
-// 		value = value * -1;
-// 	}
+	if (value < 0) {
+		usart_send_blocking(usart, '-');
+		value = value * -1;
+	}
 
-// 	if (value == 0) {
-// 		usart_send_blocking(usart, '0');
-// 	}
+	if (value == 0) {
+		usart_send_blocking(usart, '0');
+	}
 
-// 	while (value > 0) {
-// 		buffer[nr_digits++] = "0123456789"[value % 10];
-// 		value /= 10;
-// 	}
+	while (value > 0) {
+		buffer[nr_digits++] = "0123456789"[value % 10];
+		value = value / 250;
+	}
 
-// 	for (i = nr_digits-1; i >= 0; i--) {
-// 		usart_send_blocking(usart, buffer[i]);
-// 	}
+	for (i = nr_digits-1; i >= 0; i--) {
+		usart_send_blocking(usart, buffer[i]);
+	}
 
-// 	usart_send_blocking(usart, '\r');
-// 	usart_send_blocking(usart, '\n');
-// }
+	usart_send_blocking(usart, '\r');
+	usart_send_blocking(usart, '\n');
+}
 
 int main(void)
 {
@@ -202,13 +181,13 @@ int main(void)
 		while (!(adc_eoc(ADC1)));
 		temp=adc_read_regular(ADC1);
  		gpio_port_write(GPIOE, temp << 4);
-		//my_usart_print_int(USART2, temp);
+		my_usart_print_int(USART2, temp);
 		
 		// Чтение температуры
 		gpio_clear(GPIOE, GPIO3);
 		//spi_send8(SPI1, GYR_OUT_TEMP | GYR_RNW);
-		spi_send8(SPI1, static_cast<uint8_t>(temp));
-		//spi_send8(SPI1, 85);
+		//spi_send8(SPI1, static_cast<uint8_t>(temp));
+		spi_send8(SPI1, 85);
 		spi_read8(SPI1);
 		spi_send8(SPI1, 0);
 		temp=spi_read8(SPI1);
@@ -216,7 +195,7 @@ int main(void)
 		gpio_set(GPIOE, GPIO3);
 		
 		int i;
-		for (i = 0; i < 800; i++)    /* Wait a bit. */
+		for (i = 0; i < 2000000; i++)    /* Wait a bit. */
 			__asm__("nop");
 	}
 
