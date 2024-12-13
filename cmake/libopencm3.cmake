@@ -6,7 +6,7 @@ if(NOT LIBOPENCM3_REPOSITORY)
 endif()
 
 if(NOT DEVICE)
-  set(DEVICE stm32f407vg)
+  set(DEVICE stm32f303vct6)
   message(STATUS "Select default device.")
 endif()
 
