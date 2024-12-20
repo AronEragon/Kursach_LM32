@@ -109,7 +109,7 @@ static void adc_setup(void)
 
 	/* Wait for ADC starting up. */
 	int i;
-	for (i = 0; i < 800000; i++)
+	for (i = 0; i < 800; i++)
 		__asm__("nop");
 
 }
@@ -143,20 +143,24 @@ int main(void)
 		temp=adc_read_regular(ADC1);
  		gpio_port_write(GPIOE, temp << 4);
 		
+		temp = temp*0.01;
+
+		temp=(temp% 10);
+		
 
 		// Чтение температуры
-		gpio_clear(GPIOE, GPIO3);		
+		//gpio_clear(GPIOE, GPIO3);		
 		spi_send8(SPI1, static_cast<uint8_t>(temp));
 		// spi_send8(SPI1, 85);
 
 		spi_read8(SPI1);
-		spi_send8(SPI1, 0);
-		temp=spi_read8(SPI1);
+		
+		
 
 		//gpio_set(GPIOE, GPIO3);
 		
 		int i;
-		for (i = 0; i < 200000; i++)    /* Wait a bit. */
+		for (i = 0; i < 2000000; i++)    /* Wait a bit. */
 			__asm__("nop");
 
 
